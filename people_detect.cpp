@@ -44,7 +44,7 @@ public:
 };
 
 static const string keys = "{ help h   |   | print help message }"
-                           "{ camera c | 0 | capture video from camera (device index starting from 0) }"
+                           "{ camera c | 1 | capture video from camera (device index starting from 0) }"
                            "{ video v  |   | use video as input }";
 
 int main(int argc, char** argv)
@@ -66,7 +66,12 @@ int main(int argc, char** argv)
 
     VideoCapture cap;
     if (file.empty())
+	{
         cap.open(camera);
+		cap.set(CAP_PROP_FRAME_WIDTH, 2560);
+		cap.set(CAP_PROP_FRAME_HEIGHT, 720);
+		cout << "width = " << cap.get(CAP_PROP_FRAME_WIDTH) << ", height = "<<cap.get(CAP_PROP_FRAME_HEIGHT)<<endl;
+	}
     else
         cap.open(file.c_str());
     if (!cap.isOpened())
@@ -81,12 +86,23 @@ int main(int argc, char** argv)
     Mat frame;
     for (;;)
     {
-        cap >> frame;
+		Mat imgSrcLoop;
+		if ( 2560 == cap.get(CAP_PROP_FRAME_WIDTH) )
+		{
+			cap.read(imgSrcLoop);
+			frame = imgSrcLoop( Rect(0, 0, 1280, 720) );
+		}
+		else
+			cap >> frame;
+
         if (frame.empty())
         {
             cout << "Finished reading: empty frame" << endl;
             break;
         }
+		else
+			resize(frame, frame, Size(), 0.5, 0.5);
+
         int64 t = getTickCount();
         vector<Rect> found = detector.detect(frame);
         t = getTickCount() - t;
